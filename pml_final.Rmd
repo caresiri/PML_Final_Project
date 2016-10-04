@@ -1,0 +1,58 @@
+---
+title: "Practical Machine Learning Final Project"
+author: "Richard OConnor"
+date: "October 3, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(randomForest)
+```
+
+## Loading and Preparing the Data
+First we load in t he datasets provided. We then cut the training data into seperate pieces for cross validation purposes.
+We finally clean the data to only use the data avilable to the test datset.
+
+```{r}
+set.seed(31313)
+trainFull <- read.csv("pml-training.csv") #Load Training Data
+test <- read.csv("pml-testing.csv") #Load Testing Data
+
+#Delete Row NUmbers
+trainFull$X <- NULL
+test$X <- NULL
+
+inTrain <- createDataPartition(trainFull$classe, p = .6, list = F) #Create Training Partition
+train <- trainFull[inTrain, ] #Create Training Dataset
+crossVal <- trainFull[-inTrain, ] #Create Cross Validation Set
+
+# Reduce Datasets to only data avilable in the Test set
+nonNaCols <- colnames(test[, !sapply(test, anyNA)])
+test <- test[ , nonNaCols]
+trainClasse <- train$classe
+crossValClasse <- crossVal$classe
+train <- train[, colnames(train) %in% nonNaCols]
+train <- cbind(train, classe = trainClasse)
+crossVal <- crossVal[, colnames(crossVal) %in% nonNaCols]
+crossVal <- cbind(crossVal, classe = crossValClasse)
+
+```
+
+## Making a Model
+Here we make a Random Forrest Model since they have excellent accuracy.
+
+```{r}
+fit <- randomForest(classe~., data = train)
+```
+
+## Evaluation
+Now we evaluate the random forrest model on our cross validation set
+
+```{r}
+confusionMatrix(predict(fit, crossVal, type = "class"), crossVal$classe)
+```
+## Summary
+It turn out that the randomc forrest model that we built was the correct choice of models. 
+Given the cross validation above, we would expect the model to have error close to .1%. 
